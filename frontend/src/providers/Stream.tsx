@@ -17,7 +17,7 @@ import {
 import { useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { LangGraphLogoSVG } from "@/components/icons/langgraph";
+// import { LangGraphLogoSVG } from "@/components/icons/langgraph";
 import { DropChatLogoSVG } from "@/components/icons/dropchat";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
@@ -47,24 +47,13 @@ async function sleep(ms = 4000) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Removed checkGraphStatus function - not needed for our custom backend
 async function checkGraphStatus(
-  apiUrl: string,
-  apiKey: string | null,
+  _apiUrl: string,
+  _apiKey: string | null,
 ): Promise<boolean> {
-  try {
-    const res = await fetch(`${apiUrl}/info`, {
-      ...(apiKey && {
-        headers: {
-          "X-Api-Key": apiKey,
-        },
-      }),
-    });
-
-    return res.ok;
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
+  // Always return true to skip the connectivity check
+  return true;
 }
 
 const StreamSession = ({
@@ -170,13 +159,11 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
           <div className="mt-14 flex flex-col gap-2 border-b p-6">
             <div className="flex flex-col items-start gap-2">
               <DropChatLogoSVG className="h-7" />
-              <h1 className="text-xl font-semibold tracking-tight">
-                DropChat
-              </h1>
+              <h1 className="text-xl font-semibold tracking-tight">DropChat</h1>
             </div>
             <p className="text-muted-foreground">
-              Welcome to DropChat! Before you get started, you need to enter
-              the URL of the deployment and the assistant / graph ID.
+              Welcome to DropChat! Before you get started, you need to enter the
+              URL of the deployment and the assistant / graph ID.
             </p>
           </div>
           <form

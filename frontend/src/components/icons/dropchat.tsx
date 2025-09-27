@@ -1,6 +1,6 @@
 import React from "react";
 
-export function DropChatLogoSVG({
+export function DropAndChatLogoSVG({
   className,
   width = 32,
   height = 32
@@ -21,14 +21,17 @@ export function DropChatLogoSVG({
       <rect width="32" height="32" rx="8" fill="#2563eb" />
       <text
         x="16"
-        y="20"
+        y="18"
         textAnchor="middle"
-        fontSize="12"
+        fontSize="8"
         fontWeight="bold"
         fill="white"
       >
-        DC
+        D&C
       </text>
     </svg>
   );
 }
+
+// Keep the old export for backward compatibility during transition
+export const DropChatLogoSVG = DropAndChatLogoSVG;

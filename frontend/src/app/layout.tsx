@@ -11,8 +11,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Agent Chat",
-  description: "Agent Chat UX by LangChain",
+  title: "DropAndChat",
+  description: "Chat with your PDFs instantly - upload, share, and discuss",
+  icons: {
+    icon: "/logo.ico",
+    shortcut: "/logo.ico",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

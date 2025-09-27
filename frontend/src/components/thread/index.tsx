@@ -3,6 +3,8 @@ import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
+import { useCustomChat } from "@/hooks/use-custom-chat";
+import { usePathname } from "next/navigation";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
 import { Checkpoint, Message } from "@langchain/langgraph-sdk";
@@ -12,32 +14,32 @@ import {
   DO_NOT_RENDER_ID_PREFIX,
   ensureToolCallsHaveResponses,
 } from "@/lib/ensure-tool-responses";
-import { LangGraphLogoSVG } from "../icons/langgraph";
-import { DropChatLogoSVG } from "../icons/dropchat";
-import { TooltipIconButton } from "./tooltip-icon-button";
+// import { LangGraphLogoSVG } from "../icons/langgraph";
+import Image from "next/image";
+// import { TooltipIconButton } from "./tooltip-icon-button";
 import {
   ArrowDown,
   LoaderCircle,
-  PanelRightOpen,
-  PanelRightClose,
-  SquarePen,
+  // PanelRightOpen,
+  // PanelRightClose,
+  // SquarePen,
   XIcon,
-  Plus,
+  // Plus,
 } from "lucide-react";
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { useQueryState /*, parseAsBoolean */ } from "nuqs";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
-import ThreadHistory from "./history";
+// import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
-import { GitHubSVG } from "../icons/github";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
+// import { Label } from "../ui/label";
+// import { Switch } from "../ui/switch";
+// import { GitHubSVG } from "../icons/github";
+// import {
+//   Tooltip,
+//   TooltipContent,
+//   TooltipProvider,
+//   TooltipTrigger,
+// } from "../ui/tooltip";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
@@ -88,48 +90,48 @@ function ScrollToBottom(props: { className?: string }) {
   );
 }
 
-function OpenGitHubRepo() {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <a
-            href="https://github.com/langchain-ai/agent-chat-ui"
-            target="_blank"
-            className="flex items-center justify-center"
-          >
-            <GitHubSVG
-              width="24"
-              height="24"
-            />
-          </a>
-        </TooltipTrigger>
-        <TooltipContent side="left">
-          <p>Open GitHub repo</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
+// function OpenGitHubRepo() {
+//   return (
+//     <TooltipProvider>
+//       <Tooltip>
+//         <TooltipTrigger asChild>
+//           <a
+//             href="https://github.com/langchain-ai/agent-chat-ui"
+//             target="_blank"
+//             className="flex items-center justify-center"
+//           >
+//             <GitHubSVG
+//               width="24"
+//               height="24"
+//             />
+//           </a>
+//         </TooltipTrigger>
+//         <TooltipContent side="left">
+//           <p>Open GitHub repo</p>
+//         </TooltipContent>
+//       </Tooltip>
+//     </TooltipProvider>
+//   );
+// }
 
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
 
   const [threadId, _setThreadId] = useQueryState("threadId");
-  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
-    "chatHistoryOpen",
-    parseAsBoolean.withDefault(false),
-  );
-  const [hideToolCalls, setHideToolCalls] = useQueryState(
-    "hideToolCalls",
-    parseAsBoolean.withDefault(false),
-  );
+  // const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
+  //   "chatHistoryOpen",
+  //   parseAsBoolean.withDefault(false),
+  // );
+  // const [hideToolCalls, setHideToolCalls] = useQueryState(
+  //   "hideToolCalls",
+  //   parseAsBoolean.withDefault(false),
+  // );
   const [input, setInput] = useState("");
   const {
     contentBlocks,
     setContentBlocks,
-    handleFileUpload,
+    // handleFileUpload,
     dropRef,
     removeBlock,
     resetBlocks: _resetBlocks,
@@ -139,9 +141,16 @@ export function Thread() {
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
+  const pathname = usePathname();
+  const isCustomChatPage = pathname.startsWith("/chat/");
+
+  // Use custom chat for /chat/user/project URLs, otherwise use stream
+  const customChat = useCustomChat();
   const stream = useStreamContext();
-  const messages = stream.messages;
-  const isLoading = stream.isLoading;
+
+  const messages = isCustomChatPage ? customChat.messages : stream.messages;
+  const isLoading = isCustomChatPage ? customChat.isLoading : stream.isLoading;
+  const documentName = isCustomChatPage ? customChat.documentName : null;
 
   const lastError = useRef<string | undefined>(undefined);
 
@@ -154,12 +163,18 @@ export function Thread() {
   };
 
   useEffect(() => {
-    if (!stream.error) {
+    const currentError = isCustomChatPage ? customChat.error : stream.error;
+
+    if (!currentError) {
       lastError.current = undefined;
       return;
     }
+
     try {
-      const message = (stream.error as any).message;
+      const message =
+        typeof currentError === "string"
+          ? currentError
+          : (currentError as any).message;
       if (!message || lastError.current === message) {
         // Message has already been logged. do not modify ref, return early.
         return;
@@ -179,7 +194,7 @@ export function Thread() {
     } catch {
       // no-op
     }
-  }, [stream.error]);
+  }, [stream.error, customChat.error, isCustomChatPage]);
 
   // TODO: this should be part of the useStream hook
   const prevMessageLength = useRef(0);
@@ -195,43 +210,52 @@ export function Thread() {
     prevMessageLength.current = messages.length;
   }, [messages]);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
       return;
     setFirstTokenReceived(false);
 
-    const newHumanMessage: Message = {
-      id: uuidv4(),
-      type: "human",
-      content: [
-        ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
-        ...contentBlocks,
-      ] as Message["content"],
-    };
+    if (isCustomChatPage) {
+      // Use custom chat for /chat/user/project pages
+      const messageText = input.trim();
+      if (messageText) {
+        await customChat.sendMessage(messageText);
+      }
+    } else {
+      // Use original LangGraph stream for other pages
+      const newHumanMessage: Message = {
+        id: uuidv4(),
+        type: "human",
+        content: [
+          ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
+          ...contentBlocks,
+        ] as Message["content"],
+      };
 
-    const toolMessages = ensureToolCallsHaveResponses(stream.messages);
+      const toolMessages = ensureToolCallsHaveResponses(stream.messages);
 
-    const context =
-      Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
+      const context =
+        Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
 
-    stream.submit(
-      { messages: [...toolMessages, newHumanMessage], context },
-      {
-        streamMode: ["values"],
-        streamSubgraphs: true,
-        streamResumable: true,
-        optimisticValues: (prev) => ({
-          ...prev,
-          context,
-          messages: [
-            ...(prev.messages ?? []),
-            ...toolMessages,
-            newHumanMessage,
-          ],
-        }),
-      },
-    );
+      stream.submit(
+        { messages: [...toolMessages, newHumanMessage], context },
+        {
+          streamMode: ["values"],
+          streamSubgraphs: true,
+          streamResumable: true,
+          optimisticValues: (prev) => ({
+            ...prev,
+            context,
+            messages: [
+              ...(prev.messages ?? []),
+              ...toolMessages,
+              newHumanMessage,
+            ],
+          }),
+        },
+      );
+    }
 
     setInput("");
     setContentBlocks([]);
@@ -350,7 +374,7 @@ export function Thread() {
                   )}
                 </div> */}
                 <motion.button
-                  className="flex cursor-pointer items-center gap-2"
+                  className="flex cursor-pointer items-center gap-3"
                   onClick={() => setThreadId(null)}
                   animate={{
                     marginLeft: 0, // No margin needed since thread history is hidden
@@ -361,13 +385,23 @@ export function Thread() {
                     damping: 30,
                   }}
                 >
-                  <DropChatLogoSVG
+                  <Image
+                    src="/logo.png"
+                    alt="DropAndChat Logo"
                     width={32}
                     height={32}
+                    className="h-8 w-auto object-contain"
                   />
-                  <span className="text-xl font-semibold tracking-tight">
-                    DropChat
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-xl leading-none font-semibold tracking-tight">
+                      DropAndChat
+                    </span>
+                    {documentName && isCustomChatPage && (
+                      <span className="mt-1 text-xs text-gray-500">
+                        Chatting with: {documentName}
+                      </span>
+                    )}
+                  </div>
                 </motion.button>
               </div>
 
@@ -376,7 +410,8 @@ export function Thread() {
                 {/* <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div> */}
-                <TooltipIconButton
+                {/* New thread button - hidden for now, might need it later */}
+                {/* <TooltipIconButton
                   size="lg"
                   className="p-4"
                   tooltip="New thread"
@@ -384,7 +419,7 @@ export function Thread() {
                   onClick={() => setThreadId(null)}
                 >
                   <SquarePen className="size-5" />
-                </TooltipIconButton>
+                </TooltipIconButton> */}
               </div>
 
               <div className="from-background to-background/0 absolute inset-x-0 top-full h-5 bg-gradient-to-b" />
@@ -410,6 +445,36 @@ export function Thread() {
                           message={message}
                           isLoading={isLoading}
                         />
+                      ) : isCustomChatPage ? (
+                        // Simple AI message for custom chat (no regenerate, etc.)
+                        <div
+                          key={message.id || `${message.type}-${index}`}
+                          className="flex flex-col gap-2"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              <Image
+                                src="/logo.png"
+                                alt="DropAndChat AI"
+                                width={32}
+                                height={32}
+                                className="h-8 w-auto object-contain"
+                              />
+                            </div>
+                            <div className="prose prose-sm max-w-none flex-1">
+                              <div className="whitespace-pre-wrap">
+                                {Array.isArray(message.content) &&
+                                message.content[0] &&
+                                typeof message.content[0] === "object" &&
+                                "text" in message.content[0]
+                                  ? message.content[0].text
+                                  : typeof message.content === "string"
+                                    ? message.content
+                                    : ""}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       ) : (
                         <AssistantMessage
                           key={message.id || `${message.type}-${index}`}
@@ -437,11 +502,29 @@ export function Thread() {
               footer={
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
-                    <div className="flex items-center gap-3">
-                      <DropChatLogoSVG className="h-8 flex-shrink-0" />
-                      <h1 className="text-2xl font-semibold tracking-tight">
-                        DropChat
-                      </h1>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="flex items-center gap-4">
+                        <Image
+                          src="/logo.png"
+                          alt="DropAndChat Logo"
+                          width={32}
+                          height={32}
+                          className="h-8 w-auto flex-shrink-0 object-contain"
+                        />
+                        <h1 className="text-2xl leading-none font-semibold tracking-tight">
+                          DropAndChat
+                        </h1>
+                      </div>
+                      {documentName && isCustomChatPage && (
+                        <div className="text-center">
+                          <p className="mb-1 text-lg text-gray-700">
+                            Ready to answer questions about:
+                          </p>
+                          <p className="text-xl font-medium text-blue-600">
+                            {documentName}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -520,11 +603,19 @@ export function Thread() {
                           className="hidden"
                         /> */}
                         <div></div> {/* Empty div to maintain spacing */}
-                        {stream.isLoading ? (
+                        {isLoading ? (
                           <Button
                             key="stop"
-                            onClick={() => stream.stop()}
+                            onClick={() => {
+                              if (isCustomChatPage) {
+                                // For custom chat, we can't really "stop" a fetch request easily
+                                // but we could implement AbortController in the future
+                              } else {
+                                stream.stop();
+                              }
+                            }}
                             className="ml-auto"
+                            disabled={isCustomChatPage} // Disable cancel for custom chat for now
                           >
                             <LoaderCircle className="h-4 w-4 animate-spin" />
                             Cancel
