@@ -51,12 +51,11 @@ Document context:
 Please provide a comprehensive answer based on the document content."""
 
             response = client.chat.completions.create(
-                model="gpt-5-mini",
+                model="gpt-5-nano",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                max_tokens=1000
             )
 
             state.answer = response.choices[0].message.content.strip()

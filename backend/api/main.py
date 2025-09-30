@@ -144,8 +144,7 @@ async def get_project_info(user_hash: str, project_id: str):
         raise HTTPException(status_code=404, detail=f"Project not found: {str(e)}")
 
 @app.post("/chat", response_model=ChatResponse)
-@limiter.limit("20/minute")
-async def chat_with_documents(_: Request, request: ChatRequest):
+async def chat_with_documents(request: ChatRequest):
     """
     Chat with documents using the RAG agent.
 
