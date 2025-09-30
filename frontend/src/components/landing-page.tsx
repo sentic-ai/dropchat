@@ -1,24 +1,45 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Upload, FileText, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { PrivacyOverlay } from "./privacy-overlay";
 
 interface LandingPageProps {
-  onFileUpload: (file: File) => Promise<string>; // Returns the chat ID
+  onFileUpload: (file: File) => Promise<string>;
 }
 
 export function LandingPage({ onFileUpload }: LandingPageProps) {
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingFileName, setUploadingFileName] = useState<string>("");
+  const [showPrivacyOverlay, setShowPrivacyOverlay] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [hasUploaded, setHasUploaded] = useState(false);
+  const [overlayShownThisVisit, setOverlayShownThisVisit] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (hasInteracted || uploading || overlayShownThisVisit) return;
+
+    const timer = setTimeout(() => {
+      setShowPrivacyOverlay(true);
+      setOverlayShownThisVisit(true);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [hasInteracted, uploading, overlayShownThisVisit]);
+
+  const markAsInteracted = () => {
+    setHasInteracted(true);
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(true);
+    markAsInteracted();
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -29,6 +50,7 @@ export function LandingPage({ onFileUpload }: LandingPageProps) {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
+    markAsInteracted();
 
     const files = Array.from(e.dataTransfer.files);
     const pdfFile = files.find((file) => file.type === "application/pdf");
@@ -41,6 +63,7 @@ export function LandingPage({ onFileUpload }: LandingPageProps) {
   const handleFileInputChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
+    markAsInteracted();
     const file = e.target.files?.[0];
     if (file) {
       await handleFileUpload(file);
@@ -58,6 +81,7 @@ export function LandingPage({ onFileUpload }: LandingPageProps) {
     setUploading(true);
     try {
       await onFileUpload(file);
+      setHasUploaded(true);
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Upload failed. Please try again.");
@@ -68,6 +92,7 @@ export function LandingPage({ onFileUpload }: LandingPageProps) {
   };
 
   const handleClickUpload = () => {
+    markAsInteracted();
     fileInputRef.current?.click();
   };
 
@@ -99,85 +124,97 @@ export function LandingPage({ onFileUpload }: LandingPageProps) {
   }
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-white">
-      <div className="w-full max-w-2xl px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-12 text-center"
-        >
-          <div className="mb-8 flex items-center justify-center gap-4">
-            <Image
-              src="/logo.png"
-              alt="DropAndChat Logo"
-              width={64}
-              height={64}
-              className="h-16 w-auto object-contain"
-            />
-            <h1 className="text-4xl font-bold text-gray-900 tracking-tight leading-none">DropAndChat</h1>
-          </div>
-
-          <h2 className="mb-4 text-2xl font-semibold text-gray-900">
-            Create a chat for any PDF
-          </h2>
-
-          <p className="mb-2 text-lg text-gray-600">
-            Drag and drop your file to get a shareable link
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className={cn(
-            "relative cursor-pointer rounded-2xl border-2 border-dashed p-12 text-center transition-all duration-200 hover:bg-gray-50",
-            dragOver ? "border-blue-500 bg-blue-50" : "border-gray-300",
-          )}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={handleClickUpload}
-        >
-          <div className="flex flex-col items-center">
-            {dragOver ? (
-              <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                className="mb-6 rounded-full bg-blue-100 p-6"
-              >
-                <FileText className="h-12 w-12 text-blue-600" />
-              </motion.div>
-            ) : (
-              <div className="mb-6 rounded-full bg-gray-100 p-6">
-                <Upload className="h-12 w-12 text-gray-600" />
-              </div>
-            )}
-
-            <h3 className="mb-2 text-xl font-semibold text-gray-900">
-              {dragOver
-                ? "Drop your PDF here"
-                : "Drop your PDF or click to browse"}
-            </h3>
-
-            <p className="mb-6 text-gray-600">Supports PDF files up to 15MB</p>
-
-            <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-500">
-              <strong>Free Demo:</strong> Max 15MB file, link expires in 24
-              hours
+    <>
+      <div className="flex h-screen w-full items-center justify-center bg-white">
+        <div className="w-full max-w-2xl px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-12 text-center"
+          >
+            <div className="mb-8 flex items-center justify-center gap-4">
+              <Image
+                src="/logo.png"
+                alt="DropAndChat Logo"
+                width={64}
+                height={64}
+                className="h-16 w-auto object-contain"
+              />
+              <h1 className="text-4xl leading-none font-bold tracking-tight text-gray-900">
+                DropAndChat
+              </h1>
             </div>
-          </div>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileInputChange}
-            className="hidden"
-          />
-        </motion.div>
+            <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+              Create a chat for any PDF
+            </h2>
+
+            <p className="mb-2 text-lg text-gray-600">
+              Drag and drop your file to get a shareable link
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className={cn(
+              "relative cursor-pointer rounded-2xl border-2 border-dashed p-12 text-center transition-all duration-200 hover:bg-gray-50",
+              dragOver ? "border-blue-500 bg-blue-50" : "border-gray-300",
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleClickUpload}
+          >
+            <div className="flex flex-col items-center">
+              {dragOver ? (
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  className="mb-6 rounded-full bg-blue-100 p-6"
+                >
+                  <FileText className="h-12 w-12 text-blue-600" />
+                </motion.div>
+              ) : (
+                <div className="mb-6 rounded-full bg-gray-100 p-6">
+                  <Upload className="h-12 w-12 text-gray-600" />
+                </div>
+              )}
+
+              <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                {dragOver
+                  ? "Drop your PDF here"
+                  : "Drop your PDF or click to browse"}
+              </h3>
+
+              <p className="mb-6 text-gray-600">
+                Supports PDF files up to 15MB
+              </p>
+
+              <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-500">
+                <strong>Free Demo:</strong> Max 15MB file, link expires in 24
+                hours
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+          </motion.div>
+        </div>
       </div>
-    </div>
+
+      <PrivacyOverlay
+        isVisible={showPrivacyOverlay}
+        onClose={() => setShowPrivacyOverlay(false)}
+        variant={hasUploaded ? "active-user" : "privacy-concern"}
+      />
+    </>
   );
 }

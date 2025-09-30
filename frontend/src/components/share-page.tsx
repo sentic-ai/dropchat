@@ -5,10 +5,6 @@ import { motion } from 'framer-motion';
 import { Check, Copy, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from './ui/button';
-import { Thread } from './thread';
-import { StreamProvider } from '@/providers/Stream';
-import { ThreadProvider } from '@/providers/Thread';
-import { ArtifactProvider } from './thread/artifact';
 // import { cn } from '@/lib/utils';
 
 interface SharePageProps {
@@ -146,13 +142,11 @@ export function SharePage({ chatId, chatUrl, onCreateNew }: SharePageProps) {
 
           <div className="flex-1 relative">
             <div className="absolute inset-0 scale-90 origin-top-left">
-              <ThreadProvider>
-                <StreamProvider>
-                  <ArtifactProvider>
-                    <Thread />
-                  </ArtifactProvider>
-                </StreamProvider>
-              </ThreadProvider>
+              <iframe
+                src={chatUrl}
+                className="w-full h-full border-0 rounded-lg"
+                title="Chat Preview"
+              />
             </div>
           </div>
         </motion.div>

@@ -8,10 +8,10 @@ import { Toaster } from "@/components/ui/sonner";
 import React from "react";
 
 interface ChatPageProps {
-  params: {
+  params: Promise<{
     userHash: string;
     projectId: string;
-  };
+  }>;
 }
 
 export default function ChatPage({ params }: ChatPageProps): React.ReactNode {

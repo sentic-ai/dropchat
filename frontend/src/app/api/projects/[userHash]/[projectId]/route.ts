@@ -7,10 +7,10 @@ interface ProjectInfoParams {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: ProjectInfoParams }
+  { params }: { params: Promise<ProjectInfoParams> }
 ) {
   try {
-    const { userHash, projectId } = params;
+    const { userHash, projectId } = await params;
 
     // Validate required params
     if (!userHash || !projectId) {

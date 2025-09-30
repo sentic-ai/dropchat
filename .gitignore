@@ -40,3 +40,5 @@ data/
 # LangGraph
 .langgraph_api/
 claude.md
+
+*.local.txt
